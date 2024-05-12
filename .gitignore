@@ -1,0 +1,4 @@
+# .gitignore
+
+# Archivos de configuración local
+config/auth.py
