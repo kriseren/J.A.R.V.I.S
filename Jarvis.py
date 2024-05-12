@@ -34,13 +34,14 @@ def save_owner_to_json(filename, owner):
         print("El archivo JSON del propietario no existe.")
 
 
-
-def say(text):
+def say(text, rate=220):
     # Imprimir por pantalla el texto.
-    print("[J] " + text)
+    print(f"[J] {text}")
     # Utilizar el motor TTS para decir el texto
+    engine.setProperty("rate", rate)  # Ajustar la velocidad de reproducción
     engine.say(text)
     engine.runAndWait()
+
 
 
 def transcribe_audio(timeout=2):
@@ -117,7 +118,7 @@ async def main():
             # Una vez que se detecta "Jarvis", escuchar el comando después de "Jarvis"
             say(generate_sentence(owner, SentenceType.GREETING))  # Selecciona una frase de saludo aleatoria
             command = transcribe_audio()
-            print("[" + owner.name.upper()[0] + "] " + command)  # Decir el comando detectado
+            print(f"[{owner.name.upper()[0]}] " + command)
 
             # Analizar el comando para determinar si se debe encender el enchufe.
             if "inicia" in command and "protocolo" in command and "buenos días" in command:
