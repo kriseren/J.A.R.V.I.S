@@ -1,9 +1,11 @@
+import asyncio
 import datetime
 import json
 import random
-import asyncio
+
 import pyttsx3
 import speech_recognition as sr
+
 import entertainment.f1.next_gp as next_gp
 import iot.meross.meross_controller
 import sentences.farewell_responses as farewell_responses
@@ -25,6 +27,15 @@ def load_owner_from_json(filename):
     except FileNotFoundError:
         print("El archivo JSON del dueño no existe.")
         return None
+
+
+def save_owner_to_json(filename, owner):
+    try:
+        with open(filename, "w") as json_file:
+            json.dump(owner.__dict__, json_file)
+            print("Información del propietario actualizada con éxito.")
+    except FileNotFoundError:
+        print("El archivo JSON del dueño no existe.")
 
 
 def say(text):
@@ -68,6 +79,22 @@ def generate_response(input_text):
     return random.choice(not_understood_responses.not_understood_responses)
 
 
+def update_owner_info_interactive(owner):
+    try:
+        say("¿Cuál es tu nombre?")
+        name = transcribe_audio()
+        owner.name = name
+
+        say("¿Cuántos años tienes?")
+        age = int(transcribe_audio())
+        owner.age = age
+
+        save_owner_to_json("storage/json/owner.json", owner)
+        say("Información del propietario actualizada con éxito.")
+    except ValueError:
+        say("No pude entender la información del propietario. ¿Podrías repetirla?")
+
+
 async def main():
     # Obtener los datos del dueño.
     owner = load_owner_from_json("storage/json/owner.json")
@@ -81,7 +108,7 @@ async def main():
                 break
 
         # Una vez que se detecta "Jarvis", escuchar el comando después de "Jarvis"
-        say(random.choice(greetings.greetings))  # Selecciona una frase de saludo aleatoria
+        say(random.choice(greetings.greetings).format(owner.name))  # Selecciona una frase de saludo aleatoria
         command = transcribe_audio()
         print("Comando detectado: " + command)  # Decir el comando detectado
 
@@ -109,17 +136,17 @@ async def main():
             message = next_gp.get_next_gp_message()
             say(message)
 
-        elif "cómo" in command and "llamo" in command:
-            # Selecciona una frase de despedida aleatoria
+        elif "es" in command and "mi" in command and "nombre" in command:
             say("Tu nombre es " + owner.name)
-
+        elif "actualiza" in command and "propietario" in command:
+            update_owner_info_interactive(owner)
         elif "apágate" in command:
             # Selecciona una frase de despedida aleatoria
-            say(random.choice(farewell_responses.farewell_responses))
+            say(random.choice(farewell_responses.farewell_responses).format(owner.name))
             break
         else:
             # Llama a la función para generar una respuesta
-            response = generate_response(command)
+            response = generate_response(command).format(owner.name)
             say(response)
 
 
