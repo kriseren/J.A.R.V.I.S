@@ -32,7 +32,7 @@ def get_next_gp_message():
     Crea el mensaje y el tweet para el Gran Premio dado.
 
     Returns:
-        list: Una lista que contiene el mensaje y el tweet.
+        str: El mensaje.
     """
 
     response = requests.get("https://ergast.com/api/f1/current.json")
