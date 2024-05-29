@@ -93,7 +93,8 @@ async def main():
                 say(owner_info)
             elif any(word in command for word in ["dime", "decir", "cuéntame"]) and any(
                     word in command for word in ["muerte", "vise", "matavise"]):
-                say(get_random_death())
+                death = get_random_death()
+                say(death)
             # Agregar el comando para reiniciar el equipo
             elif any(word in command for word in ["reinicia", "reinciar"]) and any(
                     word in command for word in ["ordenador", "equipo", "sistema"]):

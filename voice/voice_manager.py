@@ -37,6 +37,10 @@ def transcribe_audio(timeout=2):
     # Crear un objeto reconocedor de voz
     recognizer = sr.Recognizer()
 
+    # Ajustar el umbral de energía
+    recognizer.energy_threshold = 300
+
+
     # Usar el micrófono como fuente de audio
     with sr.Microphone() as source:
         try:

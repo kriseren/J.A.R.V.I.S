@@ -14,18 +14,19 @@ def get_random_death():
     # Leer todas las líneas del archivo
     lines = response.text.splitlines()
 
-    # Seleccionar una línea al azar
-    random_line = random.choice(lines)
+    while True:
+        # Seleccionar una línea al azar
+        random_line = random.choice(lines)
 
-    # Dividir la línea en número, descripción y causa de la muerte
-    parts = random_line.split(" ~ ")
-    if len(parts) == 2:
-        description, cause = parts
-        number = description.split(".")[0].strip()
-        description = description.split(".")[1].strip()
-        return f"Muerte número {number}\n{description}\n{cause}"
-    else:
-        return f"Formato inesperado en la línea: {random_line}"
+        # Dividir la línea en número, descripción y causa de la muerte
+        parts = random_line.split(" ~ ")
+        if len(parts) == 2:
+            description, cause = parts
+            number = description.split(".")[0].strip()
+            description = description.split(".")[1].strip()
+            return f"Muerte número {number}\n{description}\n{cause}"
+        else:
+            print(f"Formato inesperado en la línea: {random_line}. Seleccionando otra muerte...")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,15 @@
-import pyttsx3
+from openai import OpenAI
 
-engine = pyttsx3.init()
-voices = engine.getProperty('voices')
-for voice in voices:
-    print("ID:", voice.id, "Name:", voice.name, "Gender:", voice.gender)
+import config.auth
+
+client = OpenAI(api_key=config.auth.OPENAI_TOKEN)
+
+completion = client.chat.completions.create(
+  model="gpt-3.5-turbo",
+  messages=[
+    {"role": "user", "content": "Can you tell me 5 countries in Latin America?"}
+  ],
+  max_tokens=30
+)
+
+print(completion.choices[0].message.content)
