@@ -82,7 +82,7 @@ def get_owner_info(owner):
     Returns:
         str: Una frase que contiene toda la información disponible sobre el propietario.
     """
-    owner_info = f"Soy el asistente J.A.R.V.I.S. y aquí está la información sobre el propietario:\n" \
+    owner_info = f"Soy el asistente JARVIS y aquí está la información sobre el propietario:\n" \
                  f"Nombre: {owner.name}\n" \
                  f"Edad: {owner.age}\n" \
                  f"Título: {owner.title}"

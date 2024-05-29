@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import os
+import re
 
 import entertainment.f1.next_gp as next_gp
 import iot.meross.meross_controller
@@ -12,6 +13,9 @@ from voice.voice_manager import say, transcribe_audio
 
 # Definir el nombre predeterminado de la palabra clave
 DEFAULT_WAKE_WORD = "Jarvis"
+
+# Lista para almacenar tareas de recordatorio
+reminder_tasks = []
 
 
 async def control_plug(action):
@@ -31,6 +35,28 @@ async def restart_computer():
     os.system("shutdown /r /t 1")
 
 
+async def remind(task, delay):
+    print("Dentro de remind")
+    await asyncio.sleep(delay)
+    say(f"Recuerda: {task}")
+
+
+def parse_reminder_command(command):
+    match = re.search(r"recuérdame que (.+) en (\d+) (segundos|minutos|horas)", command)
+    if match:
+        task = match.group(1)
+        amount = int(match.group(2))
+        unit = match.group(3)
+        if unit == "segundos":
+            delay = amount
+        elif unit == "minutos":
+            delay = amount * 60
+        elif unit == "horas":
+            delay = amount * 3600
+        else:
+            delay = 0
+        return task, delay
+    return None, None
 
 
 async def main():
@@ -47,10 +73,14 @@ async def main():
         while True:
             # Escuchar continuamente hasta que se detecte la palabra clave
             print("Escuchando...")
-            while True:
-                trigger_word = transcribe_audio()
-                if trigger_word and wake_word.lower() in trigger_word.lower():
-                    break
+            try:
+                while True:
+                    trigger_word = transcribe_audio()
+                    if trigger_word and wake_word.lower() in trigger_word.lower():
+                        break
+            except Exception as ex:
+                say(f"Error al escuchar: {ex}")
+                continue
 
             # Una vez que se detecta la palabra clave, escuchar el comando después de la palabra clave
             say(generate_sentence(owner, SentenceType.GREETING))  # Selecciona una frase de saludo aleatoria
@@ -58,56 +88,60 @@ async def main():
             print(f"[{owner.name.upper()[0]}] " + command)
 
             # Analizar el comando para determinar la acción a tomar.
-            if any(word in command for word in
-                   ["inicia", "activa"]) and "protocolo" in command and "buenos días" in command:
+            if re.search(r"(inicia|activa).*(protocolo).*buenos días", command):
                 say(f"¡Claro {owner.title}! Iniciando el protocolo buenos días...")
                 await control_plug("on")
-            elif any(word in command for word in
-                     ["inicia", "activa"]) and "protocolo" in command and "buenas noches" in command:
+            elif re.search(r"(inicia|activa).*(protocolo).*buenas noches", command):
                 say(f"¡Por supuesto {owner.title}! Protocolo buenas noches iniciado...")
                 await control_plug("off")
-            elif "hora" in command and "es" in command:
+            elif re.search(r"(qué hora|hora es|dime la hora)", command):
                 # Obtener la hora actual
                 current_time = datetime.datetime.now().time()
                 # Convertir la hora a un formato legible
                 current_time_str = current_time.strftime("%I:%M %p")
                 # Decir la hora actual utilizando el nombre del propietario
                 say("Son las " + current_time_str + ", " + owner.title)
-            elif any(word in command for word in
-                     ["cuándo", "próximo", "siguiente"]) and "gran premio" in command and "fórmula 1" in command:
+            elif re.search(r"(cuándo|próximo|siguiente).*gran premio.*fórmula 1", command):
                 message = next_gp.get_next_gp_message()
                 say(message)
-            elif "es" in command and any(word in command for word in ["nombre", "llamo"]):
+            elif re.search(r"mi nombre|cómo me llamo", command):
                 say(f"Su nombre es {owner.name}")
-            elif any(word in command for word in ["actualiza", "modifica"]) and any(
-                    word in command for word in ["datos", "propietario"]):
+            elif re.search(r"(actualiza|modifica).*datos.*propietario", command):
                 owner = update_owner_info_interactive(owner)
-            elif any(word in command for word in ["apágate", "apagar", "detente"]):
+            elif re.search(r"(apágate|apagar|detente)", command):
                 # Selecciona una frase de despedida aleatoria
                 farewell_response = generate_sentence(owner, SentenceType.FAREWELL)
                 say(farewell_response)
                 break
-            elif any(word in command for word in ["quién", "cómo", "cuál"]) and any(
-                    word in command for word in ["propietario", "soy"]):
+            elif re.search(r"(quién|cómo|cuál).*propietario|quién soy", command):
                 owner_info = get_owner_info(owner)
                 say(owner_info)
-            elif any(word in command for word in ["dime", "decir", "cuéntame"]) and any(
-                    word in command for word in ["muerte", "vise", "matavise"]):
+            elif re.search(r"(dime|decir|cuéntame).*muerte.*vise|matavise|vice|matavice", command):
                 death = get_random_death()
                 say(death)
-            # Agregar el comando para reiniciar el equipo
-            elif any(word in command for word in ["reinicia", "reinciar"]) and any(
-                    word in command for word in ["ordenador", "equipo", "sistema"]):
+            elif re.search(r"(reinicia|reiniciar).*ordenador|equipo|sistema", command):
                 await restart_computer()
-            # Agregar el comando para cambiar la palabra clave
-            elif "cambiar palabra clave" in command:
+            elif re.search(r"(cambiar|modificar|quiero cambiar).*(palabra.*clave|clave.*palabra|clave|palabra)",
+                           command):
                 config = update_config_interactive(config)
                 if config:
                     wake_word = config.wake_word
+                    say(f"La nueva palabra clave es {wake_word}.")
+            elif re.search(r"recuérdame que", command):
+                task, delay = parse_reminder_command(command)
+                if task and delay:
+                    say(f"Te recordaré {task} en {delay} segundos.")
+                    reminder_task = asyncio.create_task(remind(task, delay))
+                    reminder_tasks.append(reminder_task)
+                else:
+                    say("No pude entender el tiempo especificado para el recordatorio.")
             else:
                 # Llama a la función para generar una respuesta
                 response = generate_response(command, owner)
                 say(response)
+
+            # Asegurarse de que se ejecuten las tareas de recordatorio
+            await asyncio.gather(*reminder_tasks)
     except Exception as ex:
         say(f"Lamentablemente he sufrido el siguiente error: {ex}")
 
