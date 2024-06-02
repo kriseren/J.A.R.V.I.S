@@ -1,5 +1,8 @@
 import random
 
+from llamaapi import LlamaAPI
+
+import config.auth
 import sentences.farewell_responses as farewell_responses
 import sentences.greetings as greetings
 import sentences.not_understood_responses as not_understood_responses
@@ -35,3 +38,24 @@ def generate_farewell(owner):
 def generate_not_understood(owner):
     not_understood_response = random.choice(not_understood_responses.not_understood_responses)
     return not_understood_response.format(title=owner.title, name=owner.name)
+
+
+def generate_ai_response(input_text):
+    # Replace 'Your_API_Token' with your actual API token
+    llama = LlamaAPI(config.auth.LLAMA_API_TOKEN)
+
+    # API Request JSON
+    api_request_json = {
+        "model": "llama3-70b",
+        "messages": [
+            {"role": "system", "content": input_text},
+        ]
+    }
+
+    # Make your request and handle the response
+    response = llama.run(api_request_json)
+
+    # Extract the response content
+    response_content = response.json().get('choices', [{}])[0].get('message', {}).get('content', None)
+
+    return response_content

@@ -6,7 +6,8 @@ import re
 import entertainment.f1.next_gp as next_gp
 import iot.meross.meross_controller
 from entertainment.matavise.matavise import get_random_death
-from sentences.sentence_generator import SentenceType, generate_sentence
+from entertainment.spotify.spotify_manager import play_pause, next_track, previous_track
+from sentences.sentence_generator import SentenceType, generate_sentence, generate_ai_response
 from storage.implementations.config_manager import load_config_from_json, update_config_interactive
 from storage.implementations.owner_manager import load_owner_from_json, update_owner_info_interactive, get_owner_info
 from voice.voice_manager import say, transcribe_audio
@@ -23,7 +24,7 @@ async def control_plug(action):
     await iot.meross.meross_controller.main(action, None, None)
 
 
-def generate_response(input_text, owner):
+def generate_response(owner):
     # Selecciona una frase de no entendido aleatoria
     return generate_sentence(owner, SentenceType.NOT_UNDERSTOOD)
 
@@ -135,9 +136,23 @@ async def main():
                     reminder_tasks.append(reminder_task)
                 else:
                     say("No pude entender el tiempo especificado para el recordatorio.")
+
+            elif re.search(r"(reproducir|pausa|pausar|reproduce).*música", command):
+                play_pause()
+                say("Control de reproducción de música ejecutado.")
+            elif re.search(r"siguiente.*canción", command):
+                next_track()
+                say("Pasando a la siguiente canción.")
+            elif re.search(r"(canción anterior|volver|retroceder).*canción", command):
+                previous_track()
+                say("Volviendo a la canción anterior.")
+            ##
             else:
-                # Llama a la función para generar una respuesta
-                response = generate_response(command, owner)
+                if command:
+                    # Llama a la función para generar una respuesta
+                    response = generate_ai_response(command)
+                else:
+                    response = generate_response(owner)
                 say(response)
 
             # Asegurarse de que se ejecuten las tareas de recordatorio

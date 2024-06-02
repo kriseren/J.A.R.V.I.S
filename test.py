@@ -1,15 +1,18 @@
-from openai import OpenAI
+import json
 
-import config.auth
+from llamaapi import LlamaAPI
 
-client = OpenAI(api_key=config.auth.OPENAI_TOKEN)
+# Replace 'Your_API_Token' with your actual API token
+llama_api_key = "LL-TnlQ4ydSzAsYrKLeoNTWccqQwICK0wcLj8T6hIhuf8N5Cp72lzTnHnAph4475HvK"
+llama = LlamaAPI(llama_api_key)
+# API Request JSON Cell
+api_request_json = {
+  "model": "llama3-70b",
+  "messages": [
+    {"role": "system", "content": "Hola, ¿estás ahi?"},
+  ]
+}
 
-completion = client.chat.completions.create(
-  model="gpt-3.5-turbo",
-  messages=[
-    {"role": "user", "content": "Can you tell me 5 countries in Latin America?"}
-  ],
-  max_tokens=30
-)
-
-print(completion.choices[0].message.content)
+# Make your request and handle the response
+response = llama.run(api_request_json)
+print(json.dumps(response.json(), indent=2))
