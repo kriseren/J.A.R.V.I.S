@@ -2,11 +2,7 @@ import json
 
 from voice.voice_manager import say, transcribe_audio
 from . import owner_manager
-
-
-class Config:
-    def __init__(self, wake_word):
-        self.wake_word = wake_word
+from ..dtos.config import Config
 
 
 def load_config_from_json(filename):
@@ -22,7 +18,7 @@ def load_config_from_json(filename):
     try:
         with open(filename, "r", encoding="utf-8") as json_file:
             config_data = json.load(json_file)
-            return Config(config_data.get("wake_word"))
+            return Config(config_data.get("wake_word"), config_data.get("use_ai"))
     except FileNotFoundError:
         # Crear un objeto Config por defecto
         default_config = Config("jarvis")

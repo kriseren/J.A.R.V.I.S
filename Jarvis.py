@@ -148,7 +148,7 @@ async def main():
                 say("Volviendo a la canción anterior.")
             ##
             else:
-                if command:
+                if command and config.use_ai:
                     # Llama a la función para generar una respuesta
                     response = generate_ai_response(command)
                 else:

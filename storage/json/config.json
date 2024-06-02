@@ -1,3 +1,4 @@
 {
-  "wake_word": ""
+  "use_ai": false,
+  "wake_word": "jarvis"
 }
