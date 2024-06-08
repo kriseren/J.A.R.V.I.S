@@ -1,18 +1,32 @@
-import json
+# Set your Spotify app credentials (client ID and client secret)
+import spotipy
+from spotipy.oauth2 import SpotifyOAuth
 
-from llamaapi import LlamaAPI
+import config.auth
 
-# Replace 'Your_API_Token' with your actual API token
-llama_api_key = "LL-TnlQ4ydSzAsYrKLeoNTWccqQwICK0wcLj8T6hIhuf8N5Cp72lzTnHnAph4475HvK"
-llama = LlamaAPI(llama_api_key)
-# API Request JSON Cell
-api_request_json = {
-  "model": "llama3-70b",
-  "messages": [
-    {"role": "system", "content": "Hola, ¿estás ahi?"},
-  ]
-}
+client_id = config.auth.SPOTIFY_ID
+client_secret = config.auth.SPOTIFY_SECRET
+redirect_uri = 'http://localhost:3000/callback'  # my demo use http://localhost:3000/callback
 
-# Make your request and handle the response
-response = llama.run(api_request_json)
-print(json.dumps(response.json(), indent=2))
+# scopes for Remote control playback, Get Available Devices, Pause playback
+SCOPEs = ['app-remote-control', 'user-read-playback-state', 'user-modify-playback-state']
+
+
+def pause_spotify():
+  devices = sp.devices()
+  for device in devices['devices']:
+    if device['is_active']:
+      sp.pause_playback(device['id'])
+
+
+def resume_spotify():
+  devices = sp.devices()
+  for device in devices['devices']:
+    if device['is_active']:
+      sp.start_playback(device['id'])
+
+
+if __name__ == '__main__':
+  auth_manager = SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=SCOPEs)
+  sp = spotipy.Spotify(auth_manager=auth_manager)
+  resume_spotify()

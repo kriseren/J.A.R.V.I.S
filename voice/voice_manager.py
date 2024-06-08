@@ -38,7 +38,7 @@ def transcribe_audio(timeout=2):
     recognizer = sr.Recognizer()
 
     # Ajustar el umbral de energía
-    recognizer.energy_threshold = 300
+    recognizer.energy_threshold = 400
 
 
     # Usar el micrófono como fuente de audio

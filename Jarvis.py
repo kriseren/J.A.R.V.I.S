@@ -146,7 +146,6 @@ async def main():
             elif re.search(r"(canción anterior|volver|retroceder).*canción", command):
                 previous_track()
                 say("Volviendo a la canción anterior.")
-            ##
             else:
                 if command and config.use_ai:
                     # Llama a la función para generar una respuesta
