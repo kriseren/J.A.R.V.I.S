@@ -7,64 +7,74 @@ from meross_iot.manager import MerossManager
 
 import auth.auth as tkn
 
-# Define the credentials
+# Definir las credenciales
 EMAIL = tkn.MEROSS_EMAIL
 PASSWORD = tkn.MEROSS_PASSWORD
 
 
-async def main(action, timer_minutes, timer_seconds):
-    # Setup the HTTP client API from user-password
-    http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD,
-                                                                      api_base_url="https://iot.meross.com")
+async def main(action, timer_minutes=0, timer_seconds=0):
+    """
+    Controla los enchufes MSS310 mediante acciones de encendido y apagado, con un temporizador opcional.
 
-    # Setup and start the device manager
+    Args:
+        action (str): Acción a realizar ('on' o 'off').
+        timer_minutes (int): Minutos del temporizador (opcional).
+        timer_seconds (int): Segundos del temporizador (opcional).
+    """
+    # Configurar el cliente HTTP API con usuario y contraseña
+    http_api_client = await MerossHttpClient.async_from_user_password(email=EMAIL, password=PASSWORD,
+                                                                      api_base_url='https://iot.meross.com')
+
+    # Configurar y arrancar el gestor de dispositivos
     manager = MerossManager(http_client=http_api_client)
     await manager.async_init()
 
-    # Retrieve all the MSS310 devices that are registered on this account
+    # Descubrir todos los dispositivos MSS310 registrados en esta cuenta
     await manager.async_device_discovery()
     plugs = manager.find_devices(device_type="mss310")
 
-    if len(plugs) < 1:
-        print("No MSS310 plugs found...")
+    if not plugs:
+        print("No se encontraron enchufes MSS310...")
     else:
-        # Turn it on channel 0
-        # Note that channel argument is optional for MSS310 as they only have one channel
+        # Seleccionar el primer dispositivo MSS310 encontrado
         dev = plugs[0]
 
-        # The first time we play with a device, we must update its status
+        # Actualizar el estado del dispositivo
         await dev.async_update()
 
-        # We can now start playing with that
+        # Ejecutar la acción especificada
         if action == "on":
-            print(f"Turning on {dev.name}...")
+            print(f"Encendiendo {dev.name}...")
             await dev.async_turn_on(channel=0)
         elif action == "off":
-            print(f"Turning off {dev.name}")
+            print(f"Apagando {dev.name}...")
             await dev.async_turn_off(channel=0)
 
+        # Si se especificó un temporizador, esperar y luego apagar el dispositivo
         if timer_minutes or timer_seconds:
-            print(f"Waiting for {timer_minutes} minutes and {timer_seconds} seconds before turning it off")
+            print(f"Esperando {timer_minutes} minutos y {timer_seconds} segundos antes de apagarlo")
             await asyncio.sleep(timer_minutes * 60 + timer_seconds)
-            print(f"Turning off {dev.name}")
+            print(f"Apagando {dev.name}...")
             await dev.async_turn_off(channel=0)
 
-    # Close the manager and logout from http_api
+    # Cerrar el gestor y cerrar sesión en el cliente HTTP
     manager.close()
     await http_api_client.async_logout()
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Control MSS310 plugs with optional timer.')
-    parser.add_argument('action', choices=['on', 'off'], help='Action to perform: on or off')
-    parser.add_argument('--timer_minutes', type=int, default=0, help='Timer minutes (default: 0)')
-    parser.add_argument('--timer_seconds', type=int, default=0, help='Timer seconds (default: 0)')
+    # Analizar los argumentos de la línea de comandos
+    parser = argparse.ArgumentParser(description='Controlar enchufes MSS310 con temporizador opcional.')
+    parser.add_argument('action', choices=['on', 'off'], help='Acción a realizar: encender o apagar')
+    parser.add_argument('--timer_minutes', type=int, default=0, help='Minutos del temporizador (por defecto: 0)')
+    parser.add_argument('--timer_seconds', type=int, default=0, help='Segundos del temporizador (por defecto: 0)')
     args = parser.parse_args()
 
-    # Windows and python 3.8 requires to set up a specific event_loop_policy.
-    # On Linux and MacOSX this is not necessary.
+    # En Windows y Python 3.8 es necesario configurar una política de bucle de eventos específica.
     if os.name == 'nt':
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
+
+    # Ejecutar la función principal asincrónica
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main(args.action, args.timer_minutes, args.timer_seconds))
     loop.close()

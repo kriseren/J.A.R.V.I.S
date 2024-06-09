@@ -62,7 +62,7 @@ def update_config_interactive(config, input_mode):
         config.wake_word = wake_word
         print(f"[{owner.name.upper()[0]}] " + wake_word)
 
-        save_config_to_json("storage/json/auth.json", config)
+        save_config_to_json("storage/json/config.json", config)
         say("Información de configuración actualizada con éxito.")
         return config
     except Exception as ex:

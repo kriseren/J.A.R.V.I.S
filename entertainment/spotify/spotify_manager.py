@@ -13,6 +13,7 @@ scopes = ['app-remote-control', 'user-read-playback-state', 'user-modify-playbac
 auth_manager = SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope=scopes)
 sp = spotipy.Spotify(auth_manager=auth_manager)
 
+
 def play_pause():
     """Reproduce o pausa la reproducción en Spotify."""
     playback = sp.current_playback()
@@ -23,10 +24,12 @@ def play_pause():
         sp.start_playback()
         print("Reproducción iniciada")
 
+
 def next_track():
     """Pasa a la siguiente canción en Spotify."""
     sp.next_track()
     print("Siguiente canción")
+
 
 def previous_track():
     """Vuelve a la canción anterior en Spotify."""

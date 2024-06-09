@@ -3,10 +3,19 @@ import random
 import requests
 
 # URL del archivo de texto
-url = "https://raw.githubusercontent.com/kriseren/DatosMataVise/main/deaths.txt"
+URL = "https://raw.githubusercontent.com/kriseren/DatosMataVise/main/deaths.txt"
 
 
-def get_random_death():
+def get_random_death(url=URL):
+    """
+    Descarga una lista de muertes de un archivo de texto en línea y devuelve una muerte aleatoria.
+
+    Args:
+        url (str): URL del archivo de texto con las muertes.
+
+    Returns:
+        str: Una cadena formateada con el número de la muerte, su descripción y la causa de la muerte.
+    """
     # Descargar el archivo de texto
     response = requests.get(url)
     response.raise_for_status()  # Asegurarse de que la solicitud se realizó correctamente
@@ -22,13 +31,12 @@ def get_random_death():
         parts = random_line.split(" ~ ")
         if len(parts) == 2:
             description, cause = parts
-            number = description.split(".")[0].strip()
-            description = description.split(".")[1].strip()
-            return f"Muerte número {number}\n{description}\n{cause}"
+            number, desc_text = description.split(".", 1)
+            return f"Muerte número {number.strip()}\n{desc_text.strip()}\n{cause.strip()}"
         else:
             print(f"Formato inesperado en la línea: {random_line}. Seleccionando otra muerte...")
 
 
 if __name__ == "__main__":
-    random_death = get_random_death(url)
+    random_death = get_random_death()
     print(random_death)

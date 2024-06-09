@@ -41,7 +41,7 @@ def transcribe_audio(timeout=2):
         timeout (int): Tiempo máximo para esperar que se detecte audio.
 
     Returns:
-        str: El texto transcrit
+        str: El texto transcrito
         o, o una cadena vacía si no se pudo transcribir.
     """
     # Crear un objeto reconocedor de voz
@@ -66,5 +66,3 @@ def transcribe_audio(timeout=2):
         print("No se pudo entender el audio")
     except sr.RequestError as e:
         print("Error al solicitar la transcripción; {0}".format(e))
-
-# Otras funciones relacionadas con la interacción de voz se pueden agregar aquí

@@ -34,7 +34,6 @@ def get_next_gp_message():
     Returns:
         str: El mensaje.
     """
-
     response = requests.get("https://ergast.com/api/f1/current.json")
     gps = response.json()["MRData"]["RaceTable"]["Races"]
     gp = get_next_gp(gps)
@@ -50,40 +49,78 @@ def get_next_gp_message():
 
     if days_left == 0:
         message = (
-            f"🏁 ¡HOY ES EL DÍA SEÑORAS Y SEÑORES! 🏁\n¿Conseguirá el nano su victoria Nº33? Todos a ver la carrera a "
-            f"las {format_spanish_timezone(time)}"
+            "Hoy es el día. ¿Conseguirá el nano su victoria número 33? "
+            "Todos a ver la carrera a las {time}".format(time=format_spanish_timezone(time))
         )
-
     elif days_left <= 3:
         if "Sprint" in gp:
             message = (
-                f"¡Apenas quedan {days_left} días para volver a disfrutar! 👇🏼\n\n"
-                f"🏃 Ent. libres 1: {get_day_of_the_week(gp['FirstPractice']['date'])} a las {format_spanish_timezone(gp['FirstPractice']['time'])}\n\n"
-                f"⏱ Clasif. Sprint: {get_day_of_the_week(gp['SecondPractice']['date'])} a las {format_spanish_timezone(gp['SecondPractice']['time'])}\n\n"
-                f"🏁 Carrera Sprint: {get_day_of_the_week(gp['Sprint']['date'])} a las {format_spanish_timezone(gp['Sprint']['time'])}\n\n"
-                f"⏱ Clasificación: {get_day_of_the_week(gp['Qualifying']['date'])} a las {format_spanish_timezone(gp['Qualifying']['time'])}\n\n"
-                f"🏁 Carrera: {get_day_of_the_week(date)} a las {format_spanish_timezone(time)}\n"
+                "Apenas quedan {days} días para volver a disfrutar. "
+                "Entrenamientos libres uno: {practice1_day} a las {practice1_time}. "
+                "Clasificación Sprint: {practice2_day} a las {practice2_time}. "
+                "Carrera Sprint: {sprint_day} a las {sprint_time}. "
+                "Clasificación: {qualifying_day} a las {qualifying_time}. "
+                "Carrera: {race_day} a las {race_time}.".format(
+                    days=days_left,
+                    practice1_day=get_day_of_the_week(gp["FirstPractice"]["date"]),
+                    practice1_time=format_spanish_timezone(gp["FirstPractice"]["time"]),
+                    practice2_day=get_day_of_the_week(gp["SecondPractice"]["date"]),
+                    practice2_time=format_spanish_timezone(gp["SecondPractice"]["time"]),
+                    sprint_day=get_day_of_the_week(gp["Sprint"]["date"]),
+                    sprint_time=format_spanish_timezone(gp["Sprint"]["time"]),
+                    qualifying_day=get_day_of_the_week(gp["Qualifying"]["date"]),
+                    qualifying_time=format_spanish_timezone(gp["Qualifying"]["time"]),
+                    race_day=get_day_of_the_week(date),
+                    race_time=format_spanish_timezone(time),
+                )
             )
         else:
             message = (
-                f"¡Solo {days_left} días para disfrutarlo! 👇🏼\n\n"
-                f"🏃 Ent. libres 1: {get_day_of_the_week(gp['FirstPractice']['date'])} a las {format_spanish_timezone(gp['FirstPractice']['time'])}\n\n"
-                f"🏃 Ent. libres 2: {get_day_of_the_week(gp['SecondPractice']['date'])} a las {format_spanish_timezone(gp['SecondPractice']['time'])}\n\n"
-                f"🏃 Ent. libres 3: {get_day_of_the_week(gp['ThirdPractice']['date'])} a las {format_spanish_timezone(gp['ThirdPractice']['time'])}\n\n"
-                f"⏱ Clasificación: {get_day_of_the_week(gp['Qualifying']['date'])} a las {format_spanish_timezone(gp['Qualifying']['time'])}\n\n"
-                f"🏁 Carrera: {get_day_of_the_week(date)} a las {format_spanish_timezone(time)}\n"
+                "Solo {days} días para disfrutarlo. "
+                "Entrenamientos libres uno: {practice1_day} a las {practice1_time}. "
+                "Entrenamientos libres dos: {practice2_day} a las {practice2_time}. "
+                "Entrenamientos libres tres: {practice3_day} a las {practice3_time}. "
+                "Clasificación: {qualifying_day} a las {qualifying_time}. "
+                "Carrera: {race_day} a las {race_time}.".format(
+                    days=days_left,
+                    practice1_day=get_day_of_the_week(gp["FirstPractice"]["date"]),
+                    practice1_time=format_spanish_timezone(gp["FirstPractice"]["time"]),
+                    practice2_day=get_day_of_the_week(gp["SecondPractice"]["date"]),
+                    practice2_time=format_spanish_timezone(gp["SecondPractice"]["time"]),
+                    practice3_day=get_day_of_the_week(gp["ThirdPractice"]["date"]),
+                    practice3_time=format_spanish_timezone(gp["ThirdPractice"]["time"]),
+                    qualifying_day=get_day_of_the_week(gp["Qualifying"]["date"]),
+                    qualifying_time=format_spanish_timezone(gp["Qualifying"]["time"]),
+                    race_day=get_day_of_the_week(date),
+                    race_time=format_spanish_timezone(time),
+                )
             )
-
     elif days_left < 7:
-        message = f"Entramos en semana de carrera y quedan {days_left} días para el Gran Premio de {country} en {circuit} este {date} a las {format_spanish_timezone(time)}"
-
+        message = (
+            "Entramos en semana de carrera y quedan {days} días para el Gran Premio de {country} en {circuit} "
+            "este {date} a las {time}.".format(
+                days=days_left,
+                country=country,
+                circuit=circuit,
+                date=date,
+                time=format_spanish_timezone(time),
+            )
+        )
     else:
-        message = f"Quedan {days_left} días para el Gran Premio de {country} en {circuit}. Fecha: {date}. Hora: {format_spanish_timezone(time)}"
+        message = (
+            "Quedan {days} días para el Gran Premio de {country} en {circuit}. Fecha: {date}. Hora: {time}.".format(
+                days=days_left,
+                country=country,
+                circuit=circuit,
+                date=date,
+                time=format_spanish_timezone(time),
+            )
+        )
 
     return message
 
 
-def format_spanish_timezone(time_str: str):
+def format_spanish_timezone(time_str):
     """
     Convierte una hora en formato UTC (Z) a la hora en la zona horaria de Madrid.
 
@@ -100,16 +137,15 @@ def format_spanish_timezone(time_str: str):
     hora_fecha_madrid = temp_datetime_utc.replace(tzinfo=pytz.utc).astimezone(
         timezone_madrid
     )
-    formatted_time = hora_fecha_madrid.strftime("%H:%M")
-    return formatted_time
+    return hora_fecha_madrid.strftime("%H:%M")
 
 
-def get_day_of_the_week(date: str):
+def get_day_of_the_week(date_str):
     """
     Devuelve el nombre del día de la semana para una fecha dada.
 
     Args:
-        date (str): La fecha en formato YYYY-MM-DD.
+        date_str (str): La fecha en formato YYYY-MM-DD.
 
     Returns:
         str: El nombre del día de la semana (por ejemplo: "Domingo").
@@ -118,6 +154,5 @@ def get_day_of_the_week(date: str):
         locale.setlocale(locale.LC_TIME, "es_ES.utf8")
     except locale.Error:
         pass
-    fecha = datetime.datetime.strptime(date, "%Y-%m-%d")
-    nombre_dia = fecha.strftime("%A").capitalize()
-    return nombre_dia
+    fecha = datetime.datetime.strptime(date_str, "%Y-%m-%d")
+    return fecha.strftime("%A").capitalize()
