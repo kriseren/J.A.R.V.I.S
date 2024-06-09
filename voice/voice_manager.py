@@ -7,6 +7,16 @@ voices = engine.getProperty("voices")
 engine.setProperty("voice", voices[0].id)  # El id controla la voz.
 
 
+def get_command_input(input_mode):
+    """Obtiene el comando según el modo de entrada."""
+    if input_mode == "voice":
+        return transcribe_audio()
+    elif input_mode == "text":
+        return input("Ingrese el comando: ")
+    else:
+        raise ValueError("Modo de entrada no soportado.")
+
+
 def say(text, rate=210):
     """
     Función para que el programa "diga" un texto.
@@ -38,8 +48,7 @@ def transcribe_audio(timeout=2):
     recognizer = sr.Recognizer()
 
     # Ajustar el umbral de energía
-    recognizer.energy_threshold = 400
-
+    recognizer.energy_threshold = 900
 
     # Usar el micrófono como fuente de audio
     with sr.Microphone() as source:

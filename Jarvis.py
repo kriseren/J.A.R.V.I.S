@@ -1,3 +1,4 @@
+import argparse
 import asyncio
 import datetime
 import os
@@ -10,7 +11,7 @@ from entertainment.spotify.spotify_manager import play_pause, next_track, previo
 from sentences.sentence_generator import SentenceType, generate_sentence, generate_ai_response
 from storage.implementations.config_manager import load_config_from_json, update_config_interactive
 from storage.implementations.owner_manager import load_owner_from_json, update_owner_info_interactive, get_owner_info
-from voice.voice_manager import say, transcribe_audio
+from voice.voice_manager import say, transcribe_audio, get_command_input
 
 # Definir el nombre predeterminado de la palabra clave
 DEFAULT_WAKE_WORD = "Jarvis"
@@ -20,29 +21,45 @@ reminder_tasks = []
 
 
 async def control_plug(action):
-    # Ejecutar la función main del script de control del enchufe Meross con el argumento apropiado
+    """Controla el enchufe Meross."""
     await iot.meross.meross_controller.main(action, None, None)
 
 
 def generate_response(owner):
-    # Selecciona una frase de no entendido aleatoria
+    """Genera una respuesta de no entendido."""
     return generate_sentence(owner, SentenceType.NOT_UNDERSTOOD)
 
 
 async def restart_computer():
-    # Despedirse antes de reiniciar
-    say("Hasta luego, nos vemos después del reinicio.")
-    # Reiniciar el equipo
-    os.system("shutdown /r /t 1")
+    """Reinicia el ordenador con confirmación."""
+    say("¿Está seguro que desea reiniciar el sistema? Diga 'sí' para confirmar o 'no' para cancelar.")
+    confirmation = transcribe_audio()
+    if confirmation.lower() == "sí":
+        say("Reiniciando el sistema.")
+        os.system("shutdown /r /t 1")
+    else:
+        say("Reinicio cancelado.")
+
+
+async def shutdown_computer():
+    """Apaga el ordenador con confirmación."""
+    say("¿Está seguro que desea apagar el sistema? Diga 'sí' para confirmar o 'no' para cancelar.")
+    confirmation = transcribe_audio()
+    if confirmation.lower() == "si" or confirmation.lower() == "sí":
+        say("Apagando el sistema.")
+        os.system("shutdown /s /t 1")
+    else:
+        say("Apagado cancelado.")
 
 
 async def remind(task, delay):
-    print("Dentro de remind")
+    """Crea una tarea de recordatorio."""
     await asyncio.sleep(delay)
     say(f"Recuerda: {task}")
 
 
 def parse_reminder_command(command):
+    """Parsea el comando de recordatorio para extraer la tarea y el tiempo."""
     match = re.search(r"recuérdame que (.+) en (\d+) (segundos|minutos|horas)", command)
     if match:
         task = match.group(1)
@@ -60,105 +77,120 @@ def parse_reminder_command(command):
     return None, None
 
 
-async def main():
+async def handle_command(command, owner, config, input_mode):
+    """Maneja los comandos recibidos después de detectar la palabra clave."""
+    if re.search(r"(inicia|activa).*(protocolo).*buenos días", command):
+        say(f"¡Claro {owner.title}! Iniciando el protocolo buenos días...")
+        await control_plug("on")
+    elif re.search(r"(inicia|activa).*(protocolo).*buenas noches", command):
+        say(f"¡Por supuesto {owner.title}! Protocolo buenas noches iniciado...")
+        await control_plug("off")
+    elif re.search(r"(qué hora|hora es|dime la hora)", command):
+        current_time = datetime.datetime.now().time()
+        current_time_str = current_time.strftime("%I:%M %p")
+        say("Son las " + current_time_str + ", " + owner.title)
+    elif re.search(r"(cuándo|próximo|siguiente).*gran premio.*fórmula 1", command):
+        message = next_gp.get_next_gp_message()
+        say(message)
+    elif re.search(r"mi nombre|cómo me llamo", command):
+        say(f"Su nombre es {owner.name}")
+    elif re.search(r"(actualiza|modifica).*datos.*propietario", command):
+        owner = update_owner_info_interactive(owner, input_mode)
+    elif re.search(r"(apágate|apagar|detente)", command):
+        farewell_response = generate_sentence(owner, SentenceType.FAREWELL)
+        say(farewell_response)
+        return False
+    elif re.search(r"(quién|cómo|cuál).*propietario|quién soy", command):
+        owner_info = get_owner_info(owner)
+        say(owner_info)
+    elif re.search(r"(dime|decir|cuéntame).*muerte.*vise|matavise|vice|matavice", command):
+        death = get_random_death()
+        say(death)
+    elif re.search(r"(reinicia|reiniciar).*ordenador|equipo|sistema", command):
+        await restart_computer()
+    elif re.search(r"(apaga|apagar).*ordenador|equipo|sistema", command):
+        await shutdown_computer()
+    elif re.search(r"(actualizar|cambiar|modificar|quiero cambiar).*(palabra.*clave|clave.*palabra|clave|palabra)",
+                   command):
+        config = update_config_interactive(config, input_mode)
+        if config:
+            wake_word = config.wake_word
+            say(f"La nueva palabra clave es {wake_word}.")
+    elif re.search(r"recuérdame que", command):
+        task, delay = parse_reminder_command(command)
+        if task and delay:
+            say(f"Te recordaré {task} en {delay} segundos.")
+            reminder_task = asyncio.create_task(remind(task, delay))
+            reminder_tasks.append(reminder_task)
+        else:
+            say("No pude entender el tiempo especificado para el recordatorio.")
+    elif re.search(r"(reproducir|pausa|pausar|reproduce).*música", command):
+        play_pause()
+        say("Control de reproducción de música ejecutado.")
+    elif re.search(r"siguiente.*canción", command):
+        next_track()
+        say("Pasando a la siguiente canción.")
+    elif re.search(r"(canción anterior|volver|retroceder).*canción", command):
+        previous_track()
+        say("Volviendo a la canción anterior.")
+    else:
+        if command and config.use_ai:
+            response = generate_ai_response(command)
+        else:
+            response = generate_response(owner)
+        say(response)
+    return True
+
+
+async def main(input_mode):
+    """Función principal del asistente virtual."""
     try:
-        # Cargar la configuración del archivo JSON
+        # Cargar la configuración del archivo JSON.
         config = load_config_from_json("storage/json/config.json")
-        # Obtener el nombre de la palabra clave desde la configuración o usar el predeterminado
         wake_word = config.wake_word if config else DEFAULT_WAKE_WORD
 
         # Obtener los datos del propietario.
         owner = load_owner_from_json("storage/json/owner.json")
 
-        # Bucle infinito para mantener el programa escuchando continuamente
+        # Bucle infinito para mantener el programa escuchando continuamente.
         while True:
-            # Escuchar continuamente hasta que se detecte la palabra clave
             print("Escuchando...")
             try:
                 while True:
-                    trigger_word = transcribe_audio()
+                    trigger_word = get_command_input(input_mode)
                     if trigger_word and wake_word.lower() in trigger_word.lower():
                         break
             except Exception as ex:
                 say(f"Error al escuchar: {ex}")
                 continue
 
-            # Una vez que se detecta la palabra clave, escuchar el comando después de la palabra clave
-            say(generate_sentence(owner, SentenceType.GREETING))  # Selecciona una frase de saludo aleatoria
-            command = transcribe_audio()
+            say(generate_sentence(owner, SentenceType.GREETING))
+            command = get_command_input(input_mode)
             print(f"[{owner.name.upper()[0]}] " + command)
 
-            # Analizar el comando para determinar la acción a tomar.
-            if re.search(r"(inicia|activa).*(protocolo).*buenos días", command):
-                say(f"¡Claro {owner.title}! Iniciando el protocolo buenos días...")
-                await control_plug("on")
-            elif re.search(r"(inicia|activa).*(protocolo).*buenas noches", command):
-                say(f"¡Por supuesto {owner.title}! Protocolo buenas noches iniciado...")
-                await control_plug("off")
-            elif re.search(r"(qué hora|hora es|dime la hora)", command):
-                # Obtener la hora actual
-                current_time = datetime.datetime.now().time()
-                # Convertir la hora a un formato legible
-                current_time_str = current_time.strftime("%I:%M %p")
-                # Decir la hora actual utilizando el nombre del propietario
-                say("Son las " + current_time_str + ", " + owner.title)
-            elif re.search(r"(cuándo|próximo|siguiente).*gran premio.*fórmula 1", command):
-                message = next_gp.get_next_gp_message()
-                say(message)
-            elif re.search(r"mi nombre|cómo me llamo", command):
-                say(f"Su nombre es {owner.name}")
-            elif re.search(r"(actualiza|modifica).*datos.*propietario", command):
-                owner = update_owner_info_interactive(owner)
-            elif re.search(r"(apágate|apagar|detente)", command):
-                # Selecciona una frase de despedida aleatoria
-                farewell_response = generate_sentence(owner, SentenceType.FAREWELL)
-                say(farewell_response)
+            # Manejar el comando recibido
+            if not await handle_command(command, owner, config, input_mode):
                 break
-            elif re.search(r"(quién|cómo|cuál).*propietario|quién soy", command):
-                owner_info = get_owner_info(owner)
-                say(owner_info)
-            elif re.search(r"(dime|decir|cuéntame).*muerte.*vise|matavise|vice|matavice", command):
-                death = get_random_death()
-                say(death)
-            elif re.search(r"(reinicia|reiniciar).*ordenador|equipo|sistema", command):
-                await restart_computer()
-            elif re.search(r"(cambiar|modificar|quiero cambiar).*(palabra.*clave|clave.*palabra|clave|palabra)",
-                           command):
-                config = update_config_interactive(config)
-                if config:
-                    wake_word = config.wake_word
-                    say(f"La nueva palabra clave es {wake_word}.")
-            elif re.search(r"recuérdame que", command):
-                task, delay = parse_reminder_command(command)
-                if task and delay:
-                    say(f"Te recordaré {task} en {delay} segundos.")
-                    reminder_task = asyncio.create_task(remind(task, delay))
-                    reminder_tasks.append(reminder_task)
-                else:
-                    say("No pude entender el tiempo especificado para el recordatorio.")
 
-            elif re.search(r"(reproducir|pausa|pausar|reproduce).*música", command):
-                play_pause()
-                say("Control de reproducción de música ejecutado.")
-            elif re.search(r"siguiente.*canción", command):
-                next_track()
-                say("Pasando a la siguiente canción.")
-            elif re.search(r"(canción anterior|volver|retroceder).*canción", command):
-                previous_track()
-                say("Volviendo a la canción anterior.")
-            else:
-                if command and config.use_ai:
-                    # Llama a la función para generar una respuesta
-                    response = generate_ai_response(command)
-                else:
-                    response = generate_response(owner)
-                say(response)
+            # Eliminar las tareas de recordatorio completadas
+            reminder_tasks[:] = [task for task in reminder_tasks if not task.done()]
 
-            # Asegurarse de que se ejecuten las tareas de recordatorio
-            await asyncio.gather(*reminder_tasks)
     except Exception as ex:
         say(f"Lamentablemente he sufrido el siguiente error: {ex}")
 
 
+def parse_args():
+    """Parsea los argumentos de la línea de comandos."""
+    parser = argparse.ArgumentParser(description="Asistente Virtual J.A.R.V.I.S")
+    parser.add_argument(
+        "--input-mode",
+        choices=["voice", "text"],
+        default="voice",
+        help="Modo de entrada de comandos (voice o text)."
+    )
+    return parser.parse_args()
+
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    args = parse_args()
+    asyncio.run(main(args.input_mode))

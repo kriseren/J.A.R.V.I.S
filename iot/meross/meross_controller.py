@@ -5,7 +5,7 @@ import os
 from meross_iot.http_api import MerossHttpClient
 from meross_iot.manager import MerossManager
 
-import config.auth as tkn
+import auth.auth as tkn
 
 # Define the credentials
 EMAIL = tkn.MEROSS_EMAIL

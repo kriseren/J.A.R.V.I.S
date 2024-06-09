@@ -1,11 +1,11 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
-import config.auth
+import auth.auth
 
 # Configuración de autenticación de Spotify
-client_id = config.auth.SPOTIFY_ID
-client_secret = config.auth.SPOTIFY_SECRET
+client_id = auth.auth.SPOTIFY_ID
+client_secret = auth.auth.SPOTIFY_SECRET
 redirect_uri = 'http://localhost:3000/callback'  # URL de redirección
 scopes = ['app-remote-control', 'user-read-playback-state', 'user-modify-playback-state']
 

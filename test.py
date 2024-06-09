@@ -2,10 +2,10 @@
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 
-import config.auth
+import auth.auth
 
-client_id = config.auth.SPOTIFY_ID
-client_secret = config.auth.SPOTIFY_SECRET
+client_id = auth.auth.SPOTIFY_ID
+client_secret = auth.auth.SPOTIFY_SECRET
 redirect_uri = 'http://localhost:3000/callback'  # my demo use http://localhost:3000/callback
 
 # scopes for Remote control playback, Get Available Devices, Pause playback

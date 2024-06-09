@@ -2,7 +2,7 @@ import random
 
 from llamaapi import LlamaAPI
 
-import config.auth
+import auth.auth
 import sentences.farewell_responses as farewell_responses
 import sentences.greetings as greetings
 import sentences.not_understood_responses as not_understood_responses
@@ -41,8 +41,7 @@ def generate_not_understood(owner):
 
 
 def generate_ai_response(input_text):
-    # Replace 'Your_API_Token' with your actual API token
-    llama = LlamaAPI(config.auth.LLAMA_API_TOKEN)
+    llama = LlamaAPI(auth.auth.LLAMA_API_TOKEN)
 
     # API Request JSON
     api_request_json = {

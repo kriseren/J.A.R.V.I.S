@@ -1,7 +1,7 @@
 import json
 
 from storage.dtos.owner import Owner
-from voice.voice_manager import say, transcribe_audio
+from voice.voice_manager import say, get_command_input
 
 
 def load_owner_from_json(filename):
@@ -39,11 +39,12 @@ def save_owner_to_json(filename, owner):
         print("El archivo JSON del propietario no existe.")
 
 
-def update_owner_info_interactive(owner):
+def update_owner_info_interactive(owner, input_mode):
     """
     Actualiza los datos del propietario de manera interactiva.
 
     Args:
+        input_mode: El modo de entrada de comandos (text o voice)
         owner (Owner): El objeto Owner cuyos datos se van a actualizar.
 
     Returns:
@@ -51,17 +52,17 @@ def update_owner_info_interactive(owner):
     """
     try:
         say("¿Cuál es su nombre?")
-        name = transcribe_audio()
+        name = get_command_input(input_mode)
         owner.name = name
         print(f"[{owner.name.upper()[0]}] " + name)
 
         say("¿Cuántos años tiene?")
-        age = int(transcribe_audio())
+        age = int(get_command_input(input_mode))
         owner.age = age
         print(f"[{owner.name.upper()[0]}] " + str(age))
 
         say("¿Qué título le gustaría que usase? Por ejemplo: señor, señora, maestro, maestra...")
-        title = transcribe_audio()
+        title = get_command_input(input_mode)
         owner.title = title
         print(f"[{owner.name.upper()[0]}] " + title)
 

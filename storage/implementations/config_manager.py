@@ -1,6 +1,6 @@
 import json
 
-from voice.voice_manager import say, transcribe_audio
+from voice.voice_manager import say, get_command_input
 from . import owner_manager
 from ..dtos.config import Config
 
@@ -44,11 +44,12 @@ def save_config_to_json(filename, config):
         print("El archivo JSON de configuración no existe.")
 
 
-def update_config_interactive(config):
+def update_config_interactive(config, input_mode):
     """
     Actualiza los datos de configuración de manera interactiva.
 
     Args:
+        input_mode: El modo de entrada de comandos (text o voice).
         config (Config): El objeto Config cuyos datos se van a actualizar.
 
     Returns:
@@ -57,11 +58,11 @@ def update_config_interactive(config):
     try:
         owner = owner_manager.load_owner_from_json("storage/json/owner.json")
         say("¿Cuál es la palabra clave para activarme?")
-        wake_word = transcribe_audio()
+        wake_word = get_command_input(input_mode)
         config.wake_word = wake_word
         print(f"[{owner.name.upper()[0]}] " + wake_word)
 
-        save_config_to_json("storage/json/config.json", config)
+        save_config_to_json("storage/json/auth.json", config)
         say("Información de configuración actualizada con éxito.")
         return config
     except Exception as ex:
