@@ -3,6 +3,7 @@ import asyncio
 import datetime
 import os
 import re
+import subprocess
 
 import entertainment.f1.next_gp as next_gp
 import iot.meross.meross_controller
@@ -11,7 +12,7 @@ from entertainment.spotify.spotify_manager import play_pause, next_track, previo
 from sentences.sentence_generator import SentenceType, generate_sentence, generate_ai_response
 from storage.implementations.config_manager import load_config_from_json, update_config_interactive
 from storage.implementations.owner_manager import load_owner_from_json, update_owner_info_interactive, get_owner_info
-from voice.voice_manager import say, transcribe_audio, get_command_input
+from voice.voice_manager import say, get_command_input
 
 # Definir el nombre predeterminado de la palabra clave
 DEFAULT_WAKE_WORD = "Jarvis"
@@ -30,10 +31,10 @@ def generate_response(owner):
     return generate_sentence(owner, SentenceType.NOT_UNDERSTOOD)
 
 
-async def restart_computer():
+async def restart_computer(input_mode):
     """Reinicia el ordenador con confirmación."""
     say("¿Está seguro que desea reiniciar el sistema? Diga 'sí' para confirmar o 'no' para cancelar.")
-    confirmation = transcribe_audio()
+    confirmation = get_command_input(input_mode)
     if confirmation.lower() == "sí":
         say("Reiniciando el sistema.")
         os.system("shutdown /r /t 1")
@@ -41,10 +42,10 @@ async def restart_computer():
         say("Reinicio cancelado.")
 
 
-async def shutdown_computer():
+async def shutdown_computer(input_mode):
     """Apaga el ordenador con confirmación."""
     say("¿Está seguro que desea apagar el sistema? Diga 'sí' para confirmar o 'no' para cancelar.")
-    confirmation = transcribe_audio()
+    confirmation = get_command_input(input_mode)
     if confirmation.lower() == "si" or confirmation.lower() == "sí":
         say("Apagando el sistema.")
         os.system("shutdown /s /t 1")
@@ -53,10 +54,9 @@ async def shutdown_computer():
 
 
 async def remind(task, delay):
-    """Crea una tarea de recordatorio."""
+    """Crea una tarea de recordatorio en un subproceso."""
     await asyncio.sleep(delay)
-    say(f"Recuerda: {task}")
-
+    say(f"Recuerde: {task}")
 
 def parse_reminder_command(command):
     """Parsea el comando de recordatorio para extraer la tarea y el tiempo."""
@@ -107,9 +107,9 @@ async def handle_command(command, owner, config, input_mode):
         death = get_random_death()
         say(death)
     elif re.search(r"(reinicia|reiniciar).*ordenador|equipo|sistema", command):
-        await restart_computer()
+        await restart_computer(input_mode)
     elif re.search(r"(apaga|apagar).*ordenador|equipo|sistema", command):
-        await shutdown_computer()
+        await shutdown_computer(input_mode)
     elif re.search(r"(actualizar|cambiar|modificar|quiero cambiar).*(palabra.*clave|clave.*palabra|clave|palabra)",
                    command):
         config = update_config_interactive(config, input_mode)
@@ -120,8 +120,11 @@ async def handle_command(command, owner, config, input_mode):
         task, delay = parse_reminder_command(command)
         if task and delay:
             say(f"Te recordaré {task} en {delay} segundos.")
-            reminder_task = asyncio.create_task(remind(task, delay))
-            reminder_tasks.append(reminder_task)
+
+            subprocess.Popen(
+                ["python", "-c", f"import asyncio; from Jarvis import remind; asyncio.run(remind('{task}', {delay}))"]
+            )
+
         else:
             say("No pude entender el tiempo especificado para el recordatorio.")
     elif re.search(r"(reproducir|pausa|pausar|reproduce).*música", command):
